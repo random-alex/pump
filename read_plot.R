@@ -3,13 +3,14 @@ Sys.setenv("R_ZIPCMD" = "C:/Rtools/bin/zip.exe")
 require(readr)
 require(stringr)
 require(data.table)
+require(multidplyr)
 require(tidyverse)
 
 
 # prereq ------------------------------------------------------------------
 
-dir_colnames <- 'D:/R projects/itclover/pump/Расшифровка сигналов.xlsx'
-dir <- 'D:/R projects/itclover/pump/data/'
+dir_colnames <- 'C:/Users/ZotovAV/Desktop/prj/GIT/Test/pump/Расшифровка сигналов.xlsx'
+dir <- 'C:/Users/ZotovAV/Desktop/prj/GIT/Test/pump/data'
 
 
 
@@ -25,7 +26,10 @@ my_read <- function(fl_dir,col_nm){
     
   }
   
-  dat <- naColsRemoval(fread(fl_dir))[,time := as.numeric(lubridate::hms(str_replace(TIME,',[[:digit:]]{3}','')))/3600
+  dat <- naColsRemoval(fread(fl_dir))[,
+                                      time := as.numeric(lubridate::hms(str_replace(TIME,
+                                                                                    ',[[:digit:]]{3}',
+                                                                                    '')))/3600
                                       ][,c('day','month','year'):=tstrsplit(DATE,".", fixed=T)
                                         ][,c('DATE','TIME'):=NULL
                                           ][,lapply(.SD, my_prep_value)
@@ -50,31 +54,42 @@ df_colnm <- read.xlsx(dir_colnames) %>%
   unite('name',c('KKS','ед.изм')) %>% 
   .$name
 
-df <- tibble(dirs = list.files(dir,full.names = T)) %>% 
-  mutate(data = map(dirs,my_read,df_colnm))%>% 
-  unnest(data) %>% 
-  .[,-1] 
+#parallel reading
+cl <- 3 #num of clusters
 
+start <- proc.time()
+cluster <- create_cluster(cl)
+df <- tibble(dirs = list.files(dir,full.names = T),
+             id = rep(1:cl, length.out = NROW(dirs))) %>% 
+  partition(id,cluster = cluster) %>% 
+  cluster_library(c('data.table','lubridate','stringr','purrr')) %>% 
+  cluster_assign_value('my_read',my_read) %>% 
+  cluster_assign_value('df_colnm',df_colnm) %>% 
+  mutate(data = map(dirs,my_read,df_colnm))%>% 
+  collect() %>% 
+  unnest(data) %>% 
+  ungroup %>% 
+  .[,-c(1,2)] %>% 
+  data.table()
+
+stopCluster(cluster)
+print(proc.time() - start)
 
 
 # some plots --------------------------------------------------------------
 
 
 
-
-
-
-df %>%
-  filter(DATE ==  '19.12.2013') %>% 
-  ggplot(aes(as.numeric(time),value,col = type,group = as.factor(parameter))) +
+df[day == 19 & month == 12, ] %>% 
+  ggplot(aes(time,value,col = type,group = as.factor(parameter))) +
   # geom_point() +
-  geom_line() +
+  geom_line() + 
+  geom_vline(data = tibble(time = c(7,8)),aes(xintercept = time) )+
   facet_wrap(c('type'),scales = 'free') +
   theme_bw()
 
-df %>%
-  filter(DATE ==  '19.12.2013' & type == 'мм') %>% 
-  ggplot(aes(as.numeric(time),value,col = parameter,group = as.factor(parameter))) +
+df[day == 19 & type == 'мм',] %>% 
+  ggplot(aes(as.numeric(time),value,col = as.factor(month),group = as.factor(month):as.factor(parameter))) +
   # geom_point() +
   geom_line() +
   facet_wrap(c('type'),scales = 'free') +
