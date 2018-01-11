@@ -8,8 +8,8 @@ require(tidyverse)
 
 # prereq ------------------------------------------------------------------
 
-dir_colnames <- 'D:/R projects/itclover/test zad/Расшифровка сигналов.xlsx'
-dir <- 'D:/R projects/itclover/test zad/data/'
+dir_colnames <- 'D:/R projects/itclover/pump/Расшифровка сигналов.xlsx'
+dir <- 'D:/R projects/itclover/pump/data/'
 
 
 
@@ -19,20 +19,29 @@ my_read <- function(fl_dir,col_nm){
     na.cols = DataTable [ , .( which ( apply ( is.na ( .SD ) , 2 , all ) ) )]
     DataTable [ , unlist (na.cols) := NULL ]
   }
-  dat <- naColsRemoval(fread(fl_dir))[,TIME := str_replace(TIME,',[[:digit:]]{3}','')
-                                      ][,c("hour",'min','sec'):= tstrsplit(TIME,
-                                                                           ":", 
-                                                                           fixed=T)
-                                        ][sec == '00'| sec == '15'|
-                                            sec == '30'| sec == '45',
-                                          ]
-  colnames(dat) <- c('DATE','TIME',col_nm,"hour",'min','sec')
-  dat <- melt(dat,id.vars = c("DATE", "TIME"),
+  my_prep_value <- function(x) {
+    
+    as.numeric(str_replace(x,',','.'))
+    
+  }
+  
+  dat <- naColsRemoval(fread(fl_dir))[,time := as.numeric(lubridate::hms(str_replace(TIME,',[[:digit:]]{3}','')))/3600
+                                      ][,c('day','month','year'):=tstrsplit(DATE,".", fixed=T)
+                                        ][,c('DATE','TIME'):=NULL
+                                          ][,lapply(.SD, my_prep_value)
+                                            ][,
+                                              lapply(.SD,median),by = .(time <- round(time,2))
+                                              ]
+                                      
+  colnames(dat) <- c('time',col_nm,'day','month','year')
+  dat <- melt(dat,id.vars = c('day','month','year',"time"),
               variable.name = "par_temp")[,
                                           c("parameter", 
                                             "type") := tstrsplit(par_temp,
                                                                  "_", 
-                                                                 fixed=TRUE)][,-3]
+                                                                 fixed=TRUE)
+                                          ][,
+                                            c('par_temp'):=NULL]
   return(dat)  
 }
 
@@ -43,23 +52,44 @@ df_colnm <- read.xlsx(dir_colnames) %>%
 
 df <- tibble(dirs = list.files(dir,full.names = T)) %>% 
   mutate(data = map(dirs,my_read,df_colnm))%>% 
-  unnest(data) %>% .[,-1]
+  unnest(data) %>% 
+  .[,-1] 
 
 
 
 # some plots --------------------------------------------------------------
 
+
+
+
+
+
 df %>%
   filter(DATE ==  '19.12.2013') %>% 
-  ggplot(aes(TIME,value,col = type,group = as.factor(parameter))) +
-  geom_point() +
+  ggplot(aes(as.numeric(time),value,col = type,group = as.factor(parameter))) +
+  # geom_point() +
   geom_line() +
   facet_wrap(c('type'),scales = 'free') +
   theme_bw()
 
+df %>%
+  filter(DATE ==  '19.12.2013' & type == 'мм') %>% 
+  ggplot(aes(as.numeric(time),value,col = parameter,group = as.factor(parameter))) +
+  # geom_point() +
+  geom_line() +
+  facet_wrap(c('type'),scales = 'free') +
+  theme_bw()
 
+int_par <- c("30LAC12CY007§§XQ01","30LAC12CY008§§XQ01")
 
+df[ df[['parameter']]%in% int_par  ]
+  ggplot(aes(time,value,col = DATE,group = as.factor(parameter))) +
+  # geom_point() +
+  geom_line() +
+  facet_wrap(c('type'),scales = 'free') +
+  theme_bw()
 
+  
 
 
 
