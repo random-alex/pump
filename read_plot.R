@@ -1,4 +1,5 @@
 require(openxlsx)
+require(forcats)
 Sys.setenv("R_ZIPCMD" = "C:/Rtools/bin/zip.exe")
 require(readr)
 require(stringr)
@@ -70,8 +71,9 @@ df <- tibble(dirs = list.files(dir,full.names = T),
   unnest(data) %>% 
   ungroup %>% 
   .[,-c(1,2)] %>% 
-  data.table()
-
+  data.table()[,
+               c('parameter','type'):= list(as_factor(parameter),as_factor(type))
+               ]
 stopCluster(cluster)
 print(proc.time() - start)
 
@@ -80,7 +82,7 @@ print(proc.time() - start)
 
 
 
-df[day == 19 & month == 12, ] %>% 
+df[day == 19 & month == 12 , ] %>% 
   ggplot(aes(time,value,col = type,group = as.factor(parameter))) +
   # geom_point() +
   geom_line() + 
@@ -88,24 +90,33 @@ df[day == 19 & month == 12, ] %>%
   facet_wrap(c('type'),scales = 'free') +
   theme_bw()
 
-df[day == 19 & type == 'мм',] %>% 
-  ggplot(aes(as.numeric(time),value,col = as.factor(month),group = as.factor(month):as.factor(parameter))) +
+df[day == 19 & type == "кгс/см?" & value < 10,] %>% 
+  ggplot(aes(as.numeric(time),value,col = parameter,group = as.factor(month):as.factor(parameter))) +
+  # geom_point() +
+  geom_line() +
+  geom_vline(data = tibble(time = c(7,8)),aes(xintercept = time) )+
+  facet_wrap(c('type'),scales = 'free') +
+  theme_bw()
+
+
+
+int_par <- c("30LAB12CP901§§XQ01","30LAB12CP902§§XQ01")
+int_days <- c(1:5)
+df[ parameter %in% int_par & day %in% c(20)  & month == 12,  ] %>% 
+  ggplot(aes(time,value,col = parameter)) +
   # geom_point() +
   geom_line() +
   facet_wrap(c('type'),scales = 'free') +
   theme_bw()
-
-int_par <- c("30LAC12CY007§§XQ01","30LAC12CY008§§XQ01")
-
-df[ df[['parameter']]%in% int_par  ]
-  ggplot(aes(time,value,col = DATE,group = as.factor(parameter))) +
-  # geom_point() +
-  geom_line() +
-  facet_wrap(c('type'),scales = 'free') +
-  theme_bw()
-
+#day 2.12 int
   
-
+df[day == 2 & month == 12, ] %>% 
+  ggplot(aes(time,value,col = type,group = as.factor(parameter))) +
+  # geom_point() +
+  geom_line() + 
+  geom_vline(data = tibble(time = c(7,8)),aes(xintercept = time) )+
+  facet_wrap(c('type'),scales = 'free') +
+  theme_bw()
 
 
 
