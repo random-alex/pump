@@ -91,20 +91,22 @@ df[day == 19 & month == 12 , ] %>%
   facet_wrap(c('type'),scales = 'free') +
   theme_bw()
 
-df[day == 19 & type == "мм/с" & month == 12,] %>% 
+df[day %in% c(19,20) & type ==  "мм" & month == 11,] %>% 
   ggplot(aes(as.numeric(time),runmed(value,9),col = parameter,group = as.factor(month):as.factor(parameter))) +
   # geom_point() +
   geom_line() +
-  geom_vline(data = tibble(time = c(7,8)),aes(xintercept = time) )+
-  facet_wrap(c('type'),scales = 'free') +
+  # geom_vline(data = tibble(time = c(7,8)),aes(xintercept = time) )+
+  facet_wrap(c('type','day'),scales = 'free',nrow = 2,labeller = "label_both") +
   theme_bw()
 
 
 
-int_par <- c("30LAB12CP901§§XQ01","30LAB12CP902§§XQ01")
-int_days <- c(1:5)
-df[ parameter %in% int_par & day %in% c(20)  & month == 12,  ] %>% 
-  ggplot(aes(time,value,col = parameter)) +
+# int_par <- c("30LAB12CP901§§XQ01","30LAB12CP902§§XQ01")
+int_par <- c('30LAC12CY008§§XQ01')
+
+int_days <- c(17:21)
+df[ parameter %in% int_par& day %in% int_days   & month == 12,  ] %>% 
+  ggplot(aes(time,value,col = as.factor(day))) +
   # geom_point() +
   geom_line() +
   facet_wrap(c('type'),scales = 'free') +
