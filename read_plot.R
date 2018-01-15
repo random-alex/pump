@@ -71,9 +71,10 @@ df <- tibble(dirs = list.files(dir,full.names = T),
   unnest(data) %>% 
   ungroup %>% 
   .[,-c(1,2)] %>% 
-  data.table()[,
-               c('parameter','type'):= list(as_factor(parameter),as_factor(type))
-               ]
+  data.table() %>% 
+  .[,
+    c('parameter','type'):= list(as_factor(parameter),as_factor(type))
+    ]
 stopCluster(cluster)
 print(proc.time() - start)
 
@@ -90,8 +91,8 @@ df[day == 19 & month == 12 , ] %>%
   facet_wrap(c('type'),scales = 'free') +
   theme_bw()
 
-df[day == 19 & type == "кгс/см?" & value < 10,] %>% 
-  ggplot(aes(as.numeric(time),value,col = parameter,group = as.factor(month):as.factor(parameter))) +
+df[day == 19 & type == "мм/с" & month == 12,] %>% 
+  ggplot(aes(as.numeric(time),runmed(value,9),col = parameter,group = as.factor(month):as.factor(parameter))) +
   # geom_point() +
   geom_line() +
   geom_vline(data = tibble(time = c(7,8)),aes(xintercept = time) )+
