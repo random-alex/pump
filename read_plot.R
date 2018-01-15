@@ -1,6 +1,9 @@
+# nes. libs ---------------------------------------------------------------
+
 require(openxlsx)
-require(forcats)
+#dir to Rtools,require to make openxlsx work
 Sys.setenv("R_ZIPCMD" = "C:/Rtools/bin/zip.exe")
+require(forcats)
 require(readr)
 require(stringr)
 require(data.table)
@@ -8,7 +11,7 @@ require(multidplyr)
 require(tidyverse)
 
 
-# prereq ------------------------------------------------------------------
+# dirs  ------------------------------------------------------------------
 
 dir_colnames <- 'Расшифровка сигналов.xlsx'
 dir <- 'data'
