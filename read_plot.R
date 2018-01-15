@@ -91,8 +91,8 @@ df[day == 19 & month == 12 , ] %>%
   facet_wrap(c('type'),scales = 'free') +
   theme_bw()
 
-df[day %in% c(19,20) & type ==  "мм" & month == 11,] %>% 
-  ggplot(aes(as.numeric(time),runmed(value,9),col = parameter,group = as.factor(month):as.factor(parameter))) +
+df[day %in% c(19,20) & type ==  "мм" & month == 12&value > -0.3 ,] %>% 
+  ggplot(aes(time,value,col = parameter,group = as.factor(month):as.factor(parameter))) +
   # geom_point() +
   geom_line() +
   # geom_vline(data = tibble(time = c(7,8)),aes(xintercept = time) )+
@@ -100,19 +100,6 @@ df[day %in% c(19,20) & type ==  "мм" & month == 11,] %>%
   theme_bw()
 
 
-
-# int_par <- c("30LAB12CP901§§XQ01","30LAB12CP902§§XQ01")
-int_par <- c('30LAC12CY008§§XQ01')
-
-int_days <- c(17:21)
-df[ parameter %in% int_par& day %in% int_days   & month == 12,  ] %>% 
-  ggplot(aes(time,value,col = as.factor(day))) +
-  # geom_point() +
-  geom_line() +
-  facet_wrap(c('type'),scales = 'free') +
-  theme_bw()
-#day 2.12 int
-  
 df[day == 2 & month == 12, ] %>% 
   ggplot(aes(time,value,col = type,group = as.factor(parameter))) +
   # geom_point() +
@@ -122,8 +109,27 @@ df[day == 2 & month == 12, ] %>%
   theme_bw()
 
 
+# pics with month data on one plot ----------------------------------------
 
 
+df_long <- copy(df)
+
+df_long <- df_long[,
+              time:=((month - min(month)) * 30*24  + (day - min(day))*24 + time)/24 - (month - min(month)) * 30
+              ]
+# date of incedent
+df_int <- tibble(time = c(30*24+18*24,30*24+19*24))
+
+# plot of all data
+gg_all <- df_long%>% 
+  ggplot(aes(time,value,col = parameter,group = as.factor(parameter))) +
+  # geom_point() +
+  geom_line() +
+  # geom_vline(data = df_int,aes(xintercept = time) )+
+  facet_wrap(c('type','month'),scales = 'free',nrow = 7,labeller = "label_both") +
+  theme_bw()
+name <- 'pics/all_param.png'
+ggsave(name, plot = gg_all, width = 18,height = 10)
 
 
 
