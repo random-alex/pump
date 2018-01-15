@@ -10,8 +10,8 @@ require(tidyverse)
 
 # prereq ------------------------------------------------------------------
 
-dir_colnames <- 'C:/Users/ZotovAV/Desktop/prj/GIT/Test/pump/Расшифровка сигналов.xlsx'
-dir <- 'C:/Users/ZotovAV/Desktop/prj/GIT/Test/pump/data'
+dir_colnames <- 'Расшифровка сигналов.xlsx'
+dir <- 'data'
 
 
 
