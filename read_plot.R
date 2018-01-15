@@ -91,15 +91,16 @@ df[day == 19 & month == 12 , ] %>%
   facet_wrap(c('type'),scales = 'free') +
   theme_bw()
 
-df[day %in% c(19,20) & type ==  "мм" & month == 12&value > -0.3 ,] %>% 
+gg <- df[day %in% c(3,19) &  month == 12,] %>% 
   ggplot(aes(time,value,col = parameter,group = as.factor(month):as.factor(parameter))) +
   # geom_point() +
   geom_line() +
   # geom_vline(data = tibble(time = c(7,8)),aes(xintercept = time) )+
-  facet_wrap(c('type','day'),scales = 'free',nrow = 2,labeller = "label_both") +
+  facet_wrap(c('day','type'),scales = 'free',nrow = 2,labeller = "label_both") +
   theme_bw()
 
-
+name <- 'pics/3-19_comp.png'
+ggsave(name, plot = gg, width = 18,height = 10)
 df[day == 2 & month == 12, ] %>% 
   ggplot(aes(time,value,col = type,group = as.factor(parameter))) +
   # geom_point() +
