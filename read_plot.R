@@ -14,7 +14,7 @@ require(tidyverse)
 # dirs  ------------------------------------------------------------------
 
 dir_colnames <- 'Расшифровка сигналов.xlsx'
-dir <- 'data'
+dir <- 'data/rare data'
 
 
 
@@ -49,7 +49,11 @@ my_read <- function(fl_dir,col_nm){
                                                                  "_", 
                                                                  fixed=TRUE)
                                           ][,
-                                            c('par_temp'):=NULL]
+                                            c('par_temp','parameter'):=list(NULL,
+                                                                            str_replace_all(parameter,
+                                                                                            '§§XQ01',
+                                                                                            ''))
+                                            ]
   return(dat)  
 }
 
@@ -84,9 +88,10 @@ print(proc.time() - start)
 
 # some plots --------------------------------------------------------------
 
+df[,sum(time),by = list(day,month)]
 
 
-df[day == 19 & month == 12 , ] %>% 
+df[day ==20 & month == 12& type == 'мм', ] %>% 
   ggplot(aes(time,value,col = type,group = as.factor(parameter))) +
   # geom_point() +
   geom_line() + 
@@ -123,18 +128,69 @@ df_long <- df_long[,
               ]
 # date of incedent
 df_int <- tibble(time = c(30*24+18*24,30*24+19*24))
+#time of end of work
+
+
+df_int <- tibble(time = c(1.5,4,17.5,20))
+# df_int <- tibble(time = c(4.2,15,17.2,28))
 
 # plot of all data
-gg_all <- df_long%>% 
+#int par:
+# 30XAA12CT055 - температура переднего подшибника турб ПТН
+# 30XAA12CY001 - ВИБР(В) ПОДШ1 ТУРБ ПТН возможно при скорости больше 3 все вырубается
+# 30LAC12CY008 - Перемещение рот ПТН - доходит до -0.1 и вырубается все
+gg <- df_long %>% 
+  filter((parameter == '30XAA12CT055' | parameter == '30XAA12CS001')&month == 11) %>% 
   ggplot(aes(time,value,col = parameter,group = as.factor(parameter))) +
   # geom_point() +
   geom_line() +
-  # geom_vline(data = df_int,aes(xintercept = time) )+
+  # geom_hline(data = tibble(value = -0.1),aes(yintercept = value)) +
+  geom_vline(data = df_int,aes(xintercept = time) )+
   facet_wrap(c('type','month'),scales = 'free',nrow = 7,labeller = "label_both") +
   theme_bw()
-name <- 'pics/all_param.png'
-ggsave(name, plot = gg_all, width = 18,height = 10)
+
+
+name <- 'pics/температура_m11.png'
+ggsave(name, plot = gg, width = 10,height = 8)
 
 
 
+
+
+
+
+# save files for future proccesing ----------------------------------------
+write_csv(df,'data/rare_data.csv')
+
+
+
+
+df_n <-  as.tibble(df_long) %>% 
+  .[,-7] %>% 
+  spread(parameter,value)
+
+write_csv(df_n,'data/prep_data_for_nnet.csv')
+
+
+
+
+
+# tresh -------------------------------------------------------------------
+
+
+write_csv(df_long,'data/prep_data.csv')
+
+df_n <- df %>% 
+  mutate_at(vars(5:49),funs(runmed,.args = list(k = 21)))
+
+df_n[,c(1:5)] %>% 
+  filter(month == 12 &day == 19) %>% 
+  ggplot(aes(time,`30LAB12CF901`)) +
+  # geom_point() +
+  geom_line() +
+  # geom_vline(data = df_int,aes(xintercept = time) )+
+  facet_wrap(c('month'),scales = 'free',nrow = 7,labeller = "label_both") +
+  theme_bw()
+
+write_csv(df_n,'data/prep_data.csv')
 
